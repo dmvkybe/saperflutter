@@ -2,8 +2,10 @@ name: Flutter Build Web and APK
 on:
   push:
     branches: [ "main" ]
+
 permissions:
   contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -12,35 +14,41 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2. Устанавливаем Flutter (кеш включён для ускорения)
+      # 2. Устанавливаем Flutter
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: stable
           cache: true
-      # 4. flutter create Web (результат появится в build/web)
-      - name: Build Web
-        run: flutter create .
+
       # 3. Получаем зависимости
       - name: Install dependencies
         run: flutter pub get
 
-      # 4. Собираем Web (результат появится в build/web)
+      # 4. Собираем Web (ВАЖНО: --base-href указывает на имя вашего репозитория)
       - name: Build Web
-        run: flutter build web
-      - name: Commit and Push build/web
+        run: flutter build web --release --base-href "/tetrisflutter/"
+
+      # 5. Копируем сборку в папку docs и пушим на GitHub
+      - name: Commit and Push docs
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add build/web -f
-          git commit -m "Auto-build: update build/web [skip ci]" || echo "No changes to commit"
-          git push 
+          
+          # Создаем папку docs и копируем туда файлы
+          mkdir -p docs
+          cp -r build/web/* docs/
+          
+          # Добавляем папку в коммит и отправляем на сервер
+          git add docs -f
+          git commit -m "Auto-build: update docs [skip ci]" || echo "No changes to commit"
+          git push
 
-      # 6. Собираем APK (результат появится в build/app/outputs/flutter-apk/)
+      # 6. Собираем APK (раскомментируйте, если нужно)
       #- name: Build APK
       #  run: flutter build apk --release
 
-      # 7. Сохраняем APK как артефакт
+      # 7. Сохраняем APK как артефакт (раскомментируйте, если нужно)
       #- name: Upload APK Artifact
       #  uses: actions/upload-artifact@v4
       #  with:
